@@ -10,6 +10,18 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: Login
+  properties:
+  - name: username
+  - name: created
+    direction: desc
+
+- kind: Login
+  properties:
+  - name: username=
+  - name: created
+    direction: desc
+
 - kind: MacAddressMapping
   properties:
   - name: username

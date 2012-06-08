@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+table {border-top:1px solid #ccc; border-left:1px solid #ccc}
+th,td {border-right:1px solid #ccc; border-bottom:1px solid #ccc; padding-right:1em}
+</style>
+
+  <div class="container_12 content">
+      <div class="grid_12 alpha omega"> 
+                  
+          <img border=0 src="/static/dojo400.png" style="margin:2em" width="400" height="141" />
+          
+      </div> 
+
+      <br clear=all>
+
+<ul>
+<li>total_unique_members: {{total_unique_members}}
+<li>total_logins: {{total_logins}}
+<li>total_unique_devices: {{total_unique_devices}}
+</ul>
+      
+      <div class="grid_12 alpha omega"> 
+          
+          <div style="margin:2em">
+           <table border=0 cellspacing=0 cellpadding=2>
+           <tr><th>Member</th><th>Logins</th><th>Unique Devices</th></tr>
+           {% for m in member_sorted %}
+           <tr><td><a href="/report/{{m.1.username}}">{{m.1.username}}</a></td><td>{{m.1.logins}}</td><td>{{m.1.unique}} {{m.1.devices}}</td></tr>
+           {% endfor %}
+           </table>
+          </div>
+          
+      </div> 
+      
+ 
+  
+    <div class="clearfix">&nbsp;</div>
+ 
+  </div> 
+ 
+{% endblock %}

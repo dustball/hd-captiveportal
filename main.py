@@ -29,7 +29,7 @@ def dojo(path, force=False):
     cache_ttl = 3600
     resp = memcache.get(path)
     if force or not resp:
-        resp = urlfetch.fetch(base_url + path, deadline=10)
+        resp = urlfetch.fetch(base_url + path, deadline=14)
         try:
             resp = simplejson.loads(resp.content)
         except Exception, e:
@@ -81,6 +81,7 @@ class MacAddressMapping(db.Model):
     
     @classmethod
     def register_new_device(cls, address, username):
+        username = username.lower()
         devices = cls.all().filter('username =', username).order("-created").fetch(100)
         if len(devices) >= TOTAL_DEVICES:
           for d in devices[TOTAL_DEVICES-1:]:
@@ -103,6 +104,67 @@ class LogHandler(webapp.RequestHandler):
         self.response.out.write(template.render('templates/log.html', {
             'log': log
         }))
+
+
+class Member:
+    def f(self):
+        return 'hello world'
+
+
+class FixHandler(webapp.RequestHandler):
+    
+    def get(self):   
+        log = Login.all().fetch(10000)
+        for l in log:
+            if l.username != l.username.lower():
+                l.username = l.username.lower()
+                l.put()
+        log = MacAddressMapping().all().fetch(10000)
+        for l in log:
+            if l.username != l.username.lower():
+                l.username = l.username.lower()
+                l.put()
+ 
+class ReportHandler(webapp.RequestHandler):
+    
+    def get(self):   
+        log = Login.all().order("-created").fetch(5000)
+        member_list = {}
+        total_logins = 0
+        total_unique_members = 0
+        total_unique_devices = 0
+        for l in log:
+            username = l.username.lower()
+            total_logins += 1
+            if username not in member_list:
+              o = Member()
+              o.username = username
+              o.logins = 1
+              o.unique = 1
+              o.devices = [l.address]
+              member_list[username] = o
+              total_unique_members += 1
+              total_unique_devices += 1
+            else:
+              o = member_list[username]
+              o.logins += 1
+              if l.address not in o.devices:
+                  o.devices.append(l.address)
+                  o.unique += 1
+                  total_unique_devices += 1
+              member_list[username] = o  
+        member_sorted = sorted(member_list.iteritems(), key=lambda x: -x[1].unique)   
+        self.response.out.write(template.render('templates/report.html', locals()))
+
+class UserReportHandler(webapp.RequestHandler):
+    
+    def get(self,username):   
+        username = username.lower()
+        log = Login.all().filter("username =", username).order("-created").fetch(5000)
+        self.response.out.write(template.render('templates/log.html', {
+            'log': log
+        }))
+
 
 
 class EntryHandler(webapp.RequestHandler):
@@ -134,7 +196,7 @@ class MemberHandler(webapp.RequestHandler):
     
     def post(self):
         client = AppsService(domain=DOMAIN)
-        username = string.split(self.request.get('username'),"@")[0].strip()
+        username = string.split(self.request.get('username'),"@")[0].strip().lower()
         mac = self.request.get('mac')
         redirect = self.request.get('redirect')
         try:
@@ -253,7 +315,10 @@ class StatHandler(webapp.RequestHandler):
 def main():
     application = webapp.WSGIApplication([
         ('/', ResetHandler),
+        ('/fix', FixHandler),
         ('/log', LogHandler),
+        ('/report', ReportHandler),
+        ('/report/(.+)', UserReportHandler),
         ('/api/mac/(.+)', MacHandler),
         ('/api/stat/(.+)', StatHandler),
         ('/guest', GuestHandler),
